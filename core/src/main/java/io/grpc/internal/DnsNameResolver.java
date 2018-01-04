@@ -81,7 +81,6 @@ final class DnsNameResolver extends NameResolver {
   private final int port;
   private final Resource<ScheduledExecutorService> timerServiceResource;
   private final Resource<ExecutorService> executorResource;
-  private final ProxyDetector proxyDetector;
   @GuardedBy("this")
   private boolean shutdown;
   @GuardedBy("this")
@@ -97,8 +96,7 @@ final class DnsNameResolver extends NameResolver {
 
   DnsNameResolver(@Nullable String nsAuthority, String name, Attributes params,
       Resource<ScheduledExecutorService> timerServiceResource,
-      Resource<ExecutorService> executorResource,
-      ProxyDetector proxyDetector) {
+      Resource<ExecutorService> executorResource) {
     // TODO: if a DNS server is provided as nsAuthority, use it.
     // https://www.captechconsulting.com/blogs/accessing-the-dusty-corners-of-dns-with-java
     this.timerServiceResource = timerServiceResource;
@@ -120,7 +118,6 @@ final class DnsNameResolver extends NameResolver {
     } else {
       port = nameUri.getPort();
     }
-    this.proxyDetector = proxyDetector;
   }
 
   @Override
@@ -160,13 +157,6 @@ final class DnsNameResolver extends NameResolver {
           resolving = true;
         }
         try {
-          InetSocketAddress destination = InetSocketAddress.createUnresolved(host, port);
-          ProxyParameters proxy = proxyDetector.proxyFor(destination);
-          if (proxy != null) {
-            EquivalentAddressGroup server = new EquivalentAddressGroup(destination);
-            savedListener.onAddresses(Collections.singletonList(server), Attributes.EMPTY);
-            return;
-          }
           ResolutionResults resolvedInetAddrs;
           try {
             resolvedInetAddrs = delegateResolver.resolve(host);

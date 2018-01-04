@@ -23,7 +23,10 @@ import static org.junit.Assert.fail;
 import io.grpc.Attributes;
 import io.grpc.NameResolver;
 import io.grpc.NameResolver.Factory;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
+import javax.annotation.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -93,6 +96,22 @@ public class ManagedChannelImplGetNameResolverTest {
   }
 
   @Test
+  public void testValidTargetWithProxy() throws Exception {
+    testValidTarget("/target", "https://proxy:100",
+        new URI("https", null, "proxy", 100, null, null, null),
+        new ProxyDetector() {
+          @Nullable @Override public ProxyParameters proxyFor(SocketAddress targetServerAddress) {
+            return null;
+          }
+
+          @Nullable @Override public ProxyParameters proxyFor(URI targetUri) {
+            return new ProxyParameters(InetSocketAddress.createUnresolved("proxy", 100), null,
+                null);
+          }
+        });
+  }
+
+  @Test
   public void validTargetNoResovler() {
     Factory nameResolverFactory = new NameResolver.Factory() {
       @Override
@@ -107,7 +126,8 @@ public class ManagedChannelImplGetNameResolverTest {
     };
     try {
       ManagedChannelImpl.getNameResolver(
-          "foo.googleapis.com:8080", nameResolverFactory, NAME_RESOLVER_PARAMS);
+          "foo.googleapis.com:8080", GrpcUtil.NOOP_PROXY_DETECTOR, nameResolverFactory,
+          NAME_RESOLVER_PARAMS);
       fail("Should fail");
     } catch (IllegalArgumentException e) {
       // expected
@@ -115,9 +135,14 @@ public class ManagedChannelImplGetNameResolverTest {
   }
 
   private void testValidTarget(String target, String expectedUriString, URI expectedUri) {
+    testValidTarget(target, expectedUriString, expectedUri, GrpcUtil.NOOP_PROXY_DETECTOR);
+  }
+
+  private void testValidTarget(String target, String expectedUriString, URI expectedUri,
+      ProxyDetector proxyDetector) {
     Factory nameResolverFactory = new FakeNameResolverFactory(expectedUri.getScheme());
     FakeNameResolver nameResolver = (FakeNameResolver) ManagedChannelImpl.getNameResolver(
-        target, nameResolverFactory, NAME_RESOLVER_PARAMS);
+        target, proxyDetector, nameResolverFactory, NAME_RESOLVER_PARAMS);
     assertNotNull(nameResolver);
     assertEquals(expectedUri, nameResolver.uri);
     assertEquals(expectedUriString, nameResolver.uri.toString());
@@ -128,7 +153,7 @@ public class ManagedChannelImplGetNameResolverTest {
 
     try {
       FakeNameResolver nameResolver = (FakeNameResolver) ManagedChannelImpl.getNameResolver(
-          target, nameResolverFactory, NAME_RESOLVER_PARAMS);
+          target, GrpcUtil.NOOP_PROXY_DETECTOR, nameResolverFactory, NAME_RESOLVER_PARAMS);
       fail("Should have failed, but got resolver with " + nameResolver.uri);
     } catch (IllegalArgumentException e) {
       // expected
@@ -167,8 +192,10 @@ public class ManagedChannelImplGetNameResolverTest {
       return uri.getAuthority();
     }
 
-    @Override public void start(final Listener listener) {}
+    @Override public void start(final Listener listener) {
+    }
 
-    @Override public void shutdown() {}
+    @Override public void shutdown() {
+    }
   }
 }

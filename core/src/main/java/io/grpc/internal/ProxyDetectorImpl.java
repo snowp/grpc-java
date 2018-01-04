@@ -115,17 +115,20 @@ class ProxyDetectorImpl implements ProxyDetector {
     if (!(targetServerAddress instanceof InetSocketAddress)) {
       return null;
     }
-    return detectProxy((InetSocketAddress) targetServerAddress);
+    return detectProxy(addressAsUri((InetSocketAddress) targetServerAddress));
   }
 
-  private ProxyParameters detectProxy(InetSocketAddress targetAddr) {
-    URI uri;
+  @Nullable @Override public ProxyParameters proxyFor(URI targetUri) {
+    return detectProxy(targetUri);
+  }
+
+  private URI addressAsUri(InetSocketAddress address) {
     try {
-      uri = new URI(
+      return new URI(
           PROXY_SCHEME,
           null, /* userInfo */
-          targetAddr.getHostName(),
-          targetAddr.getPort(),
+          address.getHostName(),
+          address.getPort(),
           null, /* path */
           null, /* query */
           null /* fragment */);
@@ -136,8 +139,14 @@ class ProxyDetectorImpl implements ProxyDetector {
           e);
       return null;
     }
+  }
 
-    List<Proxy> proxies = proxySelector.get().select(uri);
+  private ProxyParameters detectProxy(URI targetUri) {
+    if (targetUri.getHost() == null) {
+      return null;
+    }
+
+    List<Proxy> proxies = proxySelector.get().select(targetUri);
     if (proxies.size() > 1) {
       log.warning("More than 1 proxy detected, gRPC will select the first one");
     }

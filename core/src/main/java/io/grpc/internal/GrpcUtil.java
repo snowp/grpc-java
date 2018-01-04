@@ -241,18 +241,13 @@ public final class GrpcUtil {
     public ProxyParameters proxyFor(SocketAddress targetServerAddress) {
       return null;
     }
-  };
 
-  /**
-   * Returns a proxy detector appropriate for the current environment.
-   */
-  public static ProxyDetector getProxyDetector() {
-    if (IS_RESTRICTED_APPENGINE) {
-      return NOOP_PROXY_DETECTOR;
-    } else {
-      return DEFAULT_PROXY_DETECTOR;
+    @Nullable
+    @Override
+    public ProxyParameters proxyFor(URI targetUri) {
+      return null;
     }
-  }
+  };
 
   /**
    * Maps HTTP error response status codes to transport codes, as defined in <a

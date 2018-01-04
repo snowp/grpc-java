@@ -16,8 +16,6 @@
 
 package io.grpc.internal;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -43,6 +41,8 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * The base class for channel builders.
@@ -149,6 +149,7 @@ public abstract class AbstractManagedChannelImplBuilder
   private boolean recordStartedRpcs = true;
   private boolean recordFinishedRpcs = true;
   private boolean tracingEnabled = true;
+  private ProxyDetector proxyDetector = GrpcUtil.DEFAULT_PROXY_DETECTOR;
 
   @Nullable
   private CensusStatsModule censusStatsOverride;
@@ -243,7 +244,7 @@ public abstract class AbstractManagedChannelImplBuilder
       this.decompressorRegistry = registry;
     } else {
       this.decompressorRegistry = DEFAULT_DECOMPRESSOR_REGISTRY;
-    } 
+    }
     return thisT();
   }
 
@@ -321,6 +322,10 @@ public abstract class AbstractManagedChannelImplBuilder
     tracingEnabled = value;
   }
 
+  protected void setProxyDetector(ProxyDetector proxyDetector) {
+    this.proxyDetector = proxyDetector;
+  }
+
   @VisibleForTesting
   final long getIdleTimeoutMillis() {
     return idleTimeoutMillis;
@@ -345,7 +350,7 @@ public abstract class AbstractManagedChannelImplBuilder
         SharedResourcePool.forResource(GrpcUtil.SHARED_CHANNEL_EXECUTOR),
         GrpcUtil.STOPWATCH_SUPPLIER,
         getEffectiveInterceptors(),
-        GrpcUtil.getProxyDetector(),
+        proxyDetector,
         ChannelTracer.getDefaultFactory());
   }
 

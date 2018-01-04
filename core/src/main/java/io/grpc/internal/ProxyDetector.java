@@ -17,6 +17,7 @@
 package io.grpc.internal;
 
 import java.net.SocketAddress;
+import java.net.URI;
 import javax.annotation.Nullable;
 
 /**
@@ -30,4 +31,11 @@ public interface ProxyDetector {
    */
   @Nullable
   ProxyParameters proxyFor(SocketAddress targetServerAddress);
+
+  /**
+   * Given a target URI, returns which proxy address should be used. If no proxy should be
+   * used, then return value will be null.
+   */
+  @Nullable
+  ProxyParameters proxyFor(URI targetUri);
 }

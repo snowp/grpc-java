@@ -112,21 +112,19 @@ public class DnsNameResolverTest {
   private ArgumentCaptor<Status> statusCaptor;
 
   private DnsNameResolver newResolver(String name, int port) {
-    return newResolver(name, port, mockResolver, GrpcUtil.NOOP_PROXY_DETECTOR);
+    return newResolver(name, port, mockResolver);
   }
 
   private DnsNameResolver newResolver(
       String name,
       int port,
-      DelegateResolver delegateResolver,
-      ProxyDetector proxyDetector) {
+      DelegateResolver delegateResolver) {
     DnsNameResolver dnsResolver = new DnsNameResolver(
         null,
         name,
         Attributes.newBuilder().set(NameResolver.Factory.PARAMS_DEFAULT_PORT, port).build(),
         fakeTimerServiceResource,
-        fakeExecutorResource,
-        proxyDetector);
+        fakeExecutorResource);
     dnsResolver.setDelegateResolver(delegateResolver);
     return dnsResolver;
   }
@@ -357,32 +355,6 @@ public class DnsNameResolverTest {
 
     assertThat(results.addresses).containsExactlyElementsIn(jdkAnswer).inOrder();
     assertThat(results.txtRecords).isEmpty();
-  }
-
-  @Test
-  public void doNotResolveWhenProxyDetected() throws Exception {
-    final String name = "foo.googleapis.com";
-    final int port = 81;
-    ProxyDetector alwaysDetectProxy = mock(ProxyDetector.class);
-    ProxyParameters proxyParameters = new ProxyParameters(
-        InetSocketAddress.createUnresolved("proxy.example.com", 1000),
-        "username",
-        "password");
-    when(alwaysDetectProxy.proxyFor(any(SocketAddress.class)))
-        .thenReturn(proxyParameters);
-    DelegateResolver unusedResolver = mock(DelegateResolver.class);
-    DnsNameResolver resolver = newResolver(name, port, unusedResolver, alwaysDetectProxy);
-    resolver.start(mockListener);
-    assertEquals(1, fakeExecutor.runDueTasks());
-    verify(unusedResolver, never()).resolve(any(String.class));
-
-    verify(mockListener).onAddresses(resultCaptor.capture(), any(Attributes.class));
-    List<EquivalentAddressGroup> result = resultCaptor.getValue();
-    assertThat(result).hasSize(1);
-    EquivalentAddressGroup eag = result.get(0);
-    assertThat(eag.getAddresses()).hasSize(1);
-    SocketAddress socketAddress = eag.getAddresses().get(0);
-    assertTrue(((InetSocketAddress) socketAddress).isUnresolved());
   }
 
   private void testInvalidUri(URI uri) {

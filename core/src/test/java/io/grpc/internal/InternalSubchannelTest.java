@@ -873,6 +873,10 @@ public class InternalSubchannelTest {
           return null;
         }
       }
+
+      @Nullable @Override public ProxyParameters proxyFor(URI targetUri) {
+        return null;
+      }
     };
     createInternalSubChannelWithProxy(proxyDetector, addr1);
     assertEquals(ConnectivityState.IDLE, internalSubchannel.getState());

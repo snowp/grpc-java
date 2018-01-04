@@ -298,7 +298,7 @@ public final class ManagedChannelImpl
       // did not cancel idleModeTimer, both of which are bugs.
       nameResolver.shutdown();
       nameResolverStarted = false;
-      nameResolver = getNameResolver(target, nameResolverFactory, nameResolverParams);
+      nameResolver = getNameResolver(target, proxyDetector, nameResolverFactory, nameResolverParams);
       lbHelper.lb.shutdown();
       lbHelper = null;
       subchannelPicker = null;
@@ -458,7 +458,7 @@ public final class ManagedChannelImpl
     this.target = checkNotNull(builder.target, "target");
     this.nameResolverFactory = builder.getNameResolverFactory();
     this.nameResolverParams = checkNotNull(builder.getNameResolverParams(), "nameResolverParams");
-    this.nameResolver = getNameResolver(target, nameResolverFactory, nameResolverParams);
+    this.nameResolver = getNameResolver(target, proxyDetector, nameResolverFactory, nameResolverParams);
     this.loadBalancerFactory =
         checkNotNull(builder.loadBalancerFactory, "loadBalancerFactory");
     this.executorPool = checkNotNull(builder.executorPool, "executorPool");
@@ -493,8 +493,9 @@ public final class ManagedChannelImpl
   }
 
   @VisibleForTesting
-  static NameResolver getNameResolver(String target, NameResolver.Factory nameResolverFactory,
+  static NameResolver getNameResolver(String target, ProxyDetector proxyDetector, NameResolver.Factory nameResolverFactory,
       Attributes nameResolverParams) {
+
     // Finding a NameResolver. Try using the target string as the URI. If that fails, try prepending
     // "dns:///".
     URI targetUri = null;
@@ -508,7 +509,24 @@ public final class ManagedChannelImpl
       // Can happen with ip addresses like "[::1]:1234" or 127.0.0.1:1234.
       uriSyntaxErrors.append(e.getMessage());
     }
+
     if (targetUri != null) {
+      ProxyParameters proxy = proxyDetector.proxyFor(targetUri);
+      if (proxy != null) {
+        try {
+          targetUri = new URI(
+              "https",
+              null,
+              proxy.proxyAddress.getHostName(),
+              proxy.proxyAddress.getPort(),
+              null,
+              null,
+              null);
+        } catch (URISyntaxException e) {
+          throw new RuntimeException(e);
+        }
+      }
+
       NameResolver resolver = nameResolverFactory.newNameResolver(targetUri, nameResolverParams);
       if (resolver != null) {
         return resolver;

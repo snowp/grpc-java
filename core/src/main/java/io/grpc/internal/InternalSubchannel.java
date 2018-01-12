@@ -32,6 +32,7 @@ import io.grpc.ConnectivityStateInfo;
 import io.grpc.EquivalentAddressGroup;
 import io.grpc.InternalLogId;
 import io.grpc.InternalWithLogId;
+import io.grpc.ProxyParameters;
 import io.grpc.Status;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -144,8 +145,6 @@ final class InternalSubchannel implements InternalWithLogId {
   @GuardedBy("lock")
   private ConnectivityStateInfo state = ConnectivityStateInfo.forNonError(IDLE);
 
-  private final ProxyDetector proxyDetector;
-
   @GuardedBy("lock")
   private Status shutdownReason;
 
@@ -153,8 +152,7 @@ final class InternalSubchannel implements InternalWithLogId {
   InternalSubchannel(EquivalentAddressGroup addressGroup, String authority, String userAgent,
       BackoffPolicy.Provider backoffPolicyProvider,
       ClientTransportFactory transportFactory, ScheduledExecutorService scheduledExecutor,
-      Supplier<Stopwatch> stopwatchSupplier, ChannelExecutor channelExecutor, Callback callback,
-      ProxyDetector proxyDetector) {
+      Supplier<Stopwatch> stopwatchSupplier, ChannelExecutor channelExecutor, Callback callback) {
     this.addressGroup = Preconditions.checkNotNull(addressGroup, "addressGroup");
     this.authority = authority;
     this.userAgent = userAgent;
@@ -164,7 +162,6 @@ final class InternalSubchannel implements InternalWithLogId {
     this.connectingTimer = stopwatchSupplier.get();
     this.channelExecutor = channelExecutor;
     this.callback = callback;
-    this.proxyDetector = proxyDetector;
   }
 
   /**
@@ -206,7 +203,7 @@ final class InternalSubchannel implements InternalWithLogId {
     List<SocketAddress> addrs = addressGroup.getAddresses();
     final SocketAddress address = addrs.get(addressIndex);
 
-    ProxyParameters proxy = proxyDetector.proxyFor(address);
+    ProxyParameters proxy = addressGroup.getProxyParameters();
     ConnectionClientTransport transport =
         transportFactory.newClientTransport(address, authority, userAgent, proxy);
     if (log.isLoggable(Level.FINE)) {

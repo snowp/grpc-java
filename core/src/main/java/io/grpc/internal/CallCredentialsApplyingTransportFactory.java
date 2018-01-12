@@ -24,6 +24,7 @@ import io.grpc.CallCredentials;
 import io.grpc.CallOptions;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
+import io.grpc.ProxyParameters;
 import io.grpc.SecurityLevel;
 import io.grpc.Status;
 import java.net.SocketAddress;

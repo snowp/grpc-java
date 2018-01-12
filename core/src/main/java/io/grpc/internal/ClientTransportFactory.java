@@ -16,6 +16,7 @@
 
 package io.grpc.internal;
 
+import io.grpc.ProxyParameters;
 import java.io.Closeable;
 import java.net.SocketAddress;
 import java.util.concurrent.ScheduledExecutorService;

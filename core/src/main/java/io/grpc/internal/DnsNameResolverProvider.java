@@ -41,22 +41,16 @@ public final class DnsNameResolverProvider extends NameResolverProvider {
 
   private static final String SCHEME = "dns";
 
-  @Override
-  public DnsNameResolver newNameResolver(URI targetUri, Attributes params) {
-    return newNameResolver(targetUri, params, GrpcUtil.getProxyDetector());
-  }
-
   @Nullable
   @Override
-  public DnsNameResolver newNameResolver(URI targetUri, Attributes params,
-      ProxyDetector proxyDetector) {
+  public DnsNameResolver newNameResolver(URI targetUri, Attributes params) {
     if (SCHEME.equals(targetUri.getScheme())) {
       String targetPath = Preconditions.checkNotNull(targetUri.getPath(), "targetPath");
       Preconditions.checkArgument(targetPath.startsWith("/"),
           "the path component (%s) of the target (%s) must start with '/'", targetPath, targetUri);
       String name = targetPath.substring(1);
       return new DnsNameResolver(targetUri.getAuthority(), name, params, GrpcUtil.TIMER_SERVICE,
-          GrpcUtil.SHARED_CHANNEL_EXECUTOR, proxyDetector);
+          GrpcUtil.SHARED_CHANNEL_EXECUTOR, GrpcUtil.getProxyDetector());
     } else {
       return null;
     }

@@ -16,6 +16,7 @@
 
 package io.grpc.internal;
 
+import io.grpc.ProxyParameters;
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
 

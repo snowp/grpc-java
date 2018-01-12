@@ -16,7 +16,6 @@
 
 package io.grpc;
 
-import io.grpc.internal.ProxyDetector;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -276,18 +275,6 @@ public abstract class ManagedChannelBuilder<T extends ManagedChannelBuilder<T>> 
    */
   @ExperimentalApi("https://github.com/grpc/grpc-java/issues/2307")
   public T maxInboundMessageSize(int max) {
-    // intentional nop
-    return thisT();
-  }
-
-  /**
-   * Sets the {@link ProxyDetector} to use when resolving proxy parameters for outgoing
-   * connections.
-   *
-   * @param proxyDetector the proxy detector to use
-   * @return this
-   */
-  public T proxyDetector(ProxyDetector proxyDetector) {
     // intentional nop
     return thisT();
   }

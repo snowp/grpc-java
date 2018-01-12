@@ -16,7 +16,6 @@
 
 package io.grpc;
 
-import io.grpc.internal.ProxyDetector;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -143,11 +142,6 @@ public abstract class ForwardingChannelBuilder<T extends ForwardingChannelBuilde
   @Override
   public T maxInboundMessageSize(int max) {
     delegate().maxInboundMessageSize(max);
-    return thisT();
-  }
-
-  @Override public T proxyDetector(ProxyDetector proxyDetector) {
-    delegate().proxyDetector(proxyDetector);
     return thisT();
   }
 

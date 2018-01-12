@@ -35,6 +35,7 @@ import com.google.common.collect.Iterables;
 import io.grpc.Attributes;
 import io.grpc.EquivalentAddressGroup;
 import io.grpc.NameResolver;
+import io.grpc.ProxyParameters;
 import io.grpc.Status;
 import io.grpc.internal.DnsNameResolver.DelegateResolver;
 import io.grpc.internal.DnsNameResolver.ResolutionResults;

@@ -37,9 +37,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.grpc.Attributes;
 import io.grpc.ConnectivityState;
 import io.grpc.ConnectivityStateInfo;
 import io.grpc.EquivalentAddressGroup;
+import io.grpc.ProxyParameters;
 import io.grpc.Status;
 import io.grpc.internal.TestUtils.MockClientTransportInfo;
 import java.net.InetSocketAddress;
@@ -863,18 +865,8 @@ public class InternalSubchannelTest {
     final SocketAddress addr1 = mock(SocketAddress.class);
     final ProxyParameters proxy = new ProxyParameters(
         InetSocketAddress.createUnresolved("proxy.example.com", 1000), "username", "password");
-    ProxyDetector proxyDetector = new ProxyDetector() {
-      @Nullable
-      @Override
-      public ProxyParameters proxyFor(SocketAddress targetServerAddress) {
-        if (targetServerAddress == addr1) {
-          return proxy;
-        } else {
-          return null;
-        }
-      }
-    };
-    createInternalSubChannelWithProxy(proxyDetector, addr1);
+
+    createInternalSubChannelWithProxy(proxy, addr1);
     assertEquals(ConnectivityState.IDLE, internalSubchannel.getState());
     assertNoCallbackInvoke();
     assertNull(internalSubchannel.obtainActiveTransport());
@@ -943,16 +935,16 @@ public class InternalSubchannelTest {
   }
 
   private void createInternalSubchannel(SocketAddress ... addrs) {
-    createInternalSubChannelWithProxy(GrpcUtil.NOOP_PROXY_DETECTOR, addrs);
+    createInternalSubChannelWithProxy(null, addrs);
   }
 
   private void createInternalSubChannelWithProxy(
-      ProxyDetector proxyDetector, SocketAddress ... addrs) {
-    addressGroup = new EquivalentAddressGroup(Arrays.asList(addrs));
+      @Nullable ProxyParameters proxyParameters, SocketAddress ... addrs) {
+    addressGroup =
+        new EquivalentAddressGroup(Arrays.asList(addrs), Attributes.EMPTY, proxyParameters);
     internalSubchannel = new InternalSubchannel(addressGroup, AUTHORITY, USER_AGENT,
         mockBackoffPolicyProvider, mockTransportFactory, fakeClock.getScheduledExecutorService(),
-        fakeClock.getStopwatchSupplier(), channelExecutor, mockInternalSubchannelCallback,
-        proxyDetector);
+        fakeClock.getStopwatchSupplier(), channelExecutor, mockInternalSubchannelCallback);
   }
 
   private void assertNoCallbackInvoke() {

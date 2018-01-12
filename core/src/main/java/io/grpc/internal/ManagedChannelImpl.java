@@ -143,8 +143,6 @@ public final class ManagedChannelImpl
   // Only null after channel is terminated. Must be assigned from the channelExecutor.
   private NameResolver nameResolver;
 
-  private final ProxyDetector proxyDetector;
-
   // Must be accessed from the channelExecutor.
   private boolean nameResolverStarted;
 
@@ -298,8 +296,7 @@ public final class ManagedChannelImpl
       // did not cancel idleModeTimer, both of which are bugs.
       nameResolver.shutdown();
       nameResolverStarted = false;
-      nameResolver =
-          getNameResolver(target, nameResolverFactory, nameResolverParams, proxyDetector);
+      nameResolver = getNameResolver(target, nameResolverFactory, nameResolverParams);
       lbHelper.lb.shutdown();
       lbHelper = null;
       subchannelPicker = null;
@@ -454,13 +451,12 @@ public final class ManagedChannelImpl
       ObjectPool<? extends Executor> oobExecutorPool,
       Supplier<Stopwatch> stopwatchSupplier,
       List<ClientInterceptor> interceptors,
-      ProxyDetector proxyDetector,
       ChannelTracer.Factory channelTracerFactory) {
     this.target = checkNotNull(builder.target, "target");
     this.nameResolverFactory = builder.getNameResolverFactory();
     this.nameResolverParams = checkNotNull(builder.getNameResolverParams(), "nameResolverParams");
     this.nameResolver =
-        getNameResolver(target, nameResolverFactory, nameResolverParams, proxyDetector);
+        getNameResolver(target, nameResolverFactory, nameResolverParams);
     this.loadBalancerFactory =
         checkNotNull(builder.loadBalancerFactory, "loadBalancerFactory");
     this.executorPool = checkNotNull(builder.executorPool, "executorPool");
@@ -486,7 +482,6 @@ public final class ManagedChannelImpl
     this.decompressorRegistry = checkNotNull(builder.decompressorRegistry, "decompressorRegistry");
     this.compressorRegistry = checkNotNull(builder.compressorRegistry, "compressorRegistry");
     this.userAgent = builder.userAgent;
-    this.proxyDetector = proxyDetector;
 
     phantom = new ManagedChannelReference(this);
     this.channelTracerFactory = channelTracerFactory;
@@ -496,7 +491,7 @@ public final class ManagedChannelImpl
 
   @VisibleForTesting
   static NameResolver getNameResolver(String target, NameResolver.Factory nameResolverFactory,
-      Attributes nameResolverParams, ProxyDetector proxyDetector) {
+      Attributes nameResolverParams) {
     // Finding a NameResolver. Try using the target string as the URI. If that fails, try prepending
     // "dns:///".
     URI targetUri = null;
@@ -511,8 +506,7 @@ public final class ManagedChannelImpl
       uriSyntaxErrors.append(e.getMessage());
     }
     if (targetUri != null) {
-      NameResolver resolver = nameResolverFactory.newNameResolver(
-          targetUri, nameResolverParams, proxyDetector);
+      NameResolver resolver = nameResolverFactory.newNameResolver(targetUri, nameResolverParams);
       if (resolver != null) {
         return resolver;
       }
@@ -530,8 +524,7 @@ public final class ManagedChannelImpl
         // Should not be possible.
         throw new IllegalArgumentException(e);
       }
-      NameResolver resolver = nameResolverFactory.newNameResolver(
-          targetUri, nameResolverParams, proxyDetector);
+      NameResolver resolver = nameResolverFactory.newNameResolver(targetUri, nameResolverParams);
       if (resolver != null) {
         return resolver;
       }
@@ -862,8 +855,7 @@ public final class ManagedChannelImpl
               void onNotInUse(InternalSubchannel is) {
                 inUseStateAggregator.updateObjectInUse(is, false);
               }
-            },
-            proxyDetector);
+            });
       subchannel.subchannel = internalSubchannel;
       logger.log(Level.FINE, "[{0}] {1} created for {2}",
           new Object[] {getLogId(), internalSubchannel.getLogId(), addressGroup});
@@ -944,8 +936,7 @@ public final class ManagedChannelImpl
               handleInternalSubchannelState(newState);
               oobChannel.handleSubchannelStateChange(newState);
             }
-          },
-          proxyDetector);
+          });
       oobChannel.setSubchannel(internalSubchannel);
       runSerialized(new Runnable() {
           @Override

@@ -17,7 +17,7 @@
 package io.grpc.netty;
 
 import io.grpc.Internal;
-import io.grpc.internal.ProxyParameters;
+import io.grpc.ProxyParameters;
 import java.net.SocketAddress;
 
 /**

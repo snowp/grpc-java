@@ -21,6 +21,7 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * A group of {@link SocketAddress}es that are considered equivalent when channel makes connections.
@@ -34,6 +35,7 @@ public final class EquivalentAddressGroup {
 
   private final List<SocketAddress> addrs;
   private final Attributes attrs;
+  private final @Nullable ProxyParameters proxyParameters;
 
   /**
    * {@link SocketAddress} docs say that the addresses are immutable, so we cache the hashCode.
@@ -44,33 +46,44 @@ public final class EquivalentAddressGroup {
    * List constructor without {@link Attributes}.
    */
   public EquivalentAddressGroup(List<SocketAddress> addrs) {
-    this(addrs, Attributes.EMPTY);
+    this(addrs, Attributes.EMPTY, null);
+  }
+
+  public EquivalentAddressGroup(List<SocketAddress> addrs, Attributes attrs) {
+    this(addrs, attrs, null);
   }
 
   /**
    * List constructor with {@link Attributes}.
    */
-  public EquivalentAddressGroup(List<SocketAddress> addrs, Attributes attrs) {
+  public EquivalentAddressGroup(List<SocketAddress> addrs,
+      Attributes attrs, ProxyParameters proxyParameters) {
     Preconditions.checkArgument(!addrs.isEmpty(), "addrs is empty");
     this.addrs = Collections.unmodifiableList(new ArrayList<SocketAddress>(addrs));
     this.attrs = Preconditions.checkNotNull(attrs, "attrs");
     // Attributes may contain mutable objects, which means Attributes' hashCode may change over
     // time, thus we don't cache Attributes' hashCode.
     hashCode = this.addrs.hashCode();
+    this.proxyParameters = proxyParameters;
   }
 
   /**
    * Singleton constructor without Attributes.
    */
   public EquivalentAddressGroup(SocketAddress addr) {
-    this(addr, Attributes.EMPTY);
+    this(addr, Attributes.EMPTY, null);
+  }
+
+  public EquivalentAddressGroup(SocketAddress addr, Attributes attrs) {
+    this(addr, attrs, null);
   }
 
   /**
    * Singleton constructor with Attributes.
    */
-  public EquivalentAddressGroup(SocketAddress addr, Attributes attrs) {
-    this(Collections.singletonList(addr), attrs);
+  public EquivalentAddressGroup(SocketAddress addr,
+      Attributes attrs, ProxyParameters proxyParameters) {
+    this(Collections.singletonList(addr), attrs, proxyParameters);
   }
 
   /**
@@ -85,6 +98,10 @@ public final class EquivalentAddressGroup {
    */
   public Attributes getAttributes() {
     return attrs;
+  }
+
+  @Nullable public ProxyParameters getProxyParameters() {
+    return proxyParameters;
   }
 
   @Override
